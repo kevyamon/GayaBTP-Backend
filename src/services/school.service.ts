@@ -48,7 +48,7 @@ class SchoolService {
         .sort({ name: 1 })
         .skip(skip)
         .limit(filters.limit)
-        .lean(),
+        .lean() as unknown as Partial<ISchool>[],
       School.countDocuments(query),
     ]);
 

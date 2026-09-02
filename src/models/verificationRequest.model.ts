@@ -1,6 +1,8 @@
 import { Schema, model, Document, Model, Types } from 'mongoose';
 import { VerificationStatus } from './proProfile.model';
 
+export { VerificationStatus };
+
 export interface IDocumentRecord {
   url: string;
   originalName?: string;

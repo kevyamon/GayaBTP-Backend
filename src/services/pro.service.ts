@@ -56,7 +56,7 @@ class ProService {
         .sort({ isVerified: -1, createdAt: -1 })
         .skip(skip)
         .limit(filters.limit)
-        .lean(),
+        .lean() as unknown as Partial<IProProfile>[],
       ProProfile.countDocuments(query),
     ]);
 

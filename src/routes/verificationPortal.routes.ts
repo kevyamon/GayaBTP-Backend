@@ -41,8 +41,9 @@ router.patch(
   authorize('admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const id = req.params.id as string;
       const updated = await verificationPortalService.updatePortal(
-        req.params.id,
+        id,
         req.body
       );
       res.status(200).json({
@@ -61,7 +62,8 @@ router.delete(
   authorize('admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await verificationPortalService.deletePortal(req.params.id);
+      const id = req.params.id as string;
+      await verificationPortalService.deletePortal(id);
       res.status(200).json({
         success: true,
         data: { message: 'Portail supprime avec succes.' },

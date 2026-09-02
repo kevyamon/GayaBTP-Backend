@@ -75,7 +75,7 @@ class AdminService {
 
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
-      User.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      User.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean() as unknown as IUser[],
       User.countDocuments(query),
     ]);
 
@@ -114,7 +114,7 @@ class AdminService {
     const query: FilterQuery<IListing> = status ? { status } : {};
     const skip = (page - 1) * limit;
     const [listings, total] = await Promise.all([
-      Listing.find(query).populate('ownerId', 'name email phone').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Listing.find(query).populate('ownerId', 'name email phone').sort({ createdAt: -1 }).skip(skip).limit(limit).lean() as unknown as IListing[],
       Listing.countDocuments(query),
     ]);
     return { listings, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } };
@@ -145,7 +145,7 @@ class AdminService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as IPayment[],
       Payment.countDocuments(query),
     ]);
     return { payments, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } };
@@ -161,7 +161,7 @@ class AdminService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as IVerificationRequest[],
       VerificationRequest.countDocuments(query),
     ]);
     return { verifications, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } };

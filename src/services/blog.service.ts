@@ -49,7 +49,7 @@ class BlogService {
         .sort({ publishedAt: -1 })
         .skip(skip)
         .limit(filters.limit)
-        .lean(),
+        .lean() as unknown as Partial<IBlogPost>[],
       BlogPost.countDocuments(query),
     ]);
 
@@ -87,7 +87,7 @@ class BlogService {
       .select('title slug excerpt coverImage category publishedAt')
       .sort({ publishedAt: -1 })
       .limit(limit)
-      .lean();
+      .lean() as unknown as Partial<IBlogPost>[];
   }
 
   async createArticle(authorId: string, authorName: string, input: Partial<IBlogPost>): Promise<IBlogPost> {

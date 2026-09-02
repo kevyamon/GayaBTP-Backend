@@ -58,7 +58,7 @@ class JobService {
         .sort({ publishedAt: -1 })
         .skip(skip)
         .limit(filters.limit)
-        .lean(),
+        .lean() as unknown as Partial<IJobOffer>[],
       JobOffer.countDocuments(query),
     ]);
 

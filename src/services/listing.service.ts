@@ -71,7 +71,7 @@ class ListingService {
         .sort(sortOption)
         .skip(skip)
         .limit(filters.limit)
-        .lean(),
+        .lean() as unknown as Partial<IListing>[],
       Listing.countDocuments(query),
     ]);
 
