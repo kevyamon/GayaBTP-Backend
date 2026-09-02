@@ -1,0 +1,36 @@
+# Fichiers de dépendances et build
+node_modules/
+dist/
+build/
+.tsbuildinfo
+
+# Environnements et secrets (CRITIQUE: Ne jamais commiter)
+.env
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers OS et IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers de couverture de test
+coverage/
+.nyc_output/
+
+# Uploads temporaires locaux
+uploads/
+tmp/
