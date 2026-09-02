@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { listingService } from '../services/listing.service';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 class ListingController {
   async getListings(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -18,7 +19,7 @@ class ListingController {
 
   async getListingById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const listing = await listingService.getListingById(req.params.id);
+      const listing = await listingService.getListingById(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: listing,
@@ -51,7 +52,7 @@ class ListingController {
       const updated = await listingService.updateListing(
         req.user.userId,
         req.user.role,
-        req.params.id,
+        getParam(req.params.id),
         req.body
       );
       res.status(200).json({
@@ -68,7 +69,7 @@ class ListingController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      await listingService.deleteListing(req.user.userId, req.user.role, req.params.id);
+      await listingService.deleteListing(req.user.userId, req.user.role, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Annonce supprimee / archivee avec succes.' },

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { proService } from '../services/pro.service';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 class ProController {
   async getPros(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -18,7 +19,7 @@ class ProController {
 
   async getProById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const pro = await proService.getPublicProById(req.params.id);
+      const pro = await proService.getPublicProById(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: pro,
@@ -78,7 +79,7 @@ class ProController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      await proService.deleteService(req.user.userId, req.params.id);
+      await proService.deleteService(req.user.userId, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Service supprime avec succes.' },
@@ -108,7 +109,7 @@ class ProController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      await proService.deleteProject(req.user.userId, req.params.id);
+      await proService.deleteProject(req.user.userId, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Projet supprime avec succes.' },

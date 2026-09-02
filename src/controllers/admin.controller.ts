@@ -3,6 +3,7 @@ import { adminService } from '../services/admin.service';
 import { paymentService } from '../services/payment.service';
 import { verificationService } from '../services/verification.service';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 class AdminController {
   async getDashboard(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -35,7 +36,7 @@ class AdminController {
     try {
       if (!req.user) throw AppError.unauthorized();
       const user = await adminService.updateUserStatus(
-        req.params.id,
+        getParam(req.params.id),
         req.body.status,
         req.user.userId,
         req.user.email
@@ -50,7 +51,7 @@ class AdminController {
     try {
       if (!req.user) throw AppError.unauthorized();
       const user = await adminService.updateUserRole(
-        req.params.id,
+        getParam(req.params.id),
         req.body.role,
         req.user.userId,
         req.user.email
@@ -76,7 +77,7 @@ class AdminController {
     try {
       if (!req.user) throw AppError.unauthorized();
       const listing = await adminService.moderateListing(
-        req.params.id,
+        getParam(req.params.id),
         req.body.status,
         req.user.userId,
         req.user.email
@@ -104,7 +105,7 @@ class AdminController {
       const payment = await paymentService.adminVerifyPayment(
         req.user.userId,
         req.user.email,
-        req.params.id,
+        getParam(req.params.id),
         req.body.action,
         req.body.notes
       );
@@ -131,7 +132,7 @@ class AdminController {
       const request = await verificationService.adminReviewRequest(
         req.user.userId,
         req.user.email,
-        req.params.id,
+        getParam(req.params.id),
         req.body.action,
         req.body.notes
       );

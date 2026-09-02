@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { alertService } from '../services/alert.service';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 class AlertController {
   async createAlert(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -42,7 +43,7 @@ class AlertController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      const alert = await alertService.getAlertById(req.user.userId, req.params.id);
+      const alert = await alertService.getAlertById(req.user.userId, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: alert,
@@ -59,7 +60,7 @@ class AlertController {
       }
       const updated = await alertService.updateAlert(
         req.user.userId,
-        req.params.id,
+        getParam(req.params.id),
         req.body
       );
       res.status(200).json({
@@ -78,7 +79,7 @@ class AlertController {
       }
       const updated = await alertService.toggleAlertStatus(
         req.user.userId,
-        req.params.id
+        getParam(req.params.id)
       );
       res.status(200).json({
         success: true,
@@ -94,7 +95,7 @@ class AlertController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      await alertService.deleteAlert(req.user.userId, req.params.id);
+      await alertService.deleteAlert(req.user.userId, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Alerte supprimee avec succes.' },

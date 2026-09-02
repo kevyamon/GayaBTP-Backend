@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { jobService } from '../services/job.service';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 class JobController {
   async getJobs(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -18,7 +19,7 @@ class JobController {
 
   async getJobById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const job = await jobService.getJobById(req.params.id);
+      const job = await jobService.getJobById(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: job,
@@ -55,7 +56,7 @@ class JobController {
       const updated = await jobService.updateJob(
         req.user.userId,
         req.user.role,
-        req.params.id,
+        getParam(req.params.id),
         req.body
       );
       res.status(200).json({
@@ -72,7 +73,7 @@ class JobController {
       if (!req.user) {
         throw AppError.unauthorized();
       }
-      await jobService.deleteJob(req.user.userId, req.user.role, req.params.id);
+      await jobService.deleteJob(req.user.userId, req.user.role, getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Offre supprimee avec succes.' },

@@ -1,11 +1,11 @@
-import { Schema, model, Document, Model } from 'mongoose';
+import { Schema, model, Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export type UserRole = 'particulier' | 'professionnel' | 'admin';
 export type UserStatus = 'active' | 'suspended' | 'pending';
 
 export interface IUser extends Document {
-  _id: Schema.Types.ObjectId;
+  _id: Types.ObjectId;
   name: string;
   email: string;
   password?: string;
@@ -81,9 +81,10 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
     toJSON: {
       transform: (_doc, ret) => {
-        delete ret.password;
-        delete ret.__v;
-        return ret;
+        const obj = { ...ret };
+        delete obj.password;
+        delete obj.__v;
+        return obj;
       },
     },
   }

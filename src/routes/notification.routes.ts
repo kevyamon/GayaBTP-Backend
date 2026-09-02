@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { notificationService } from '../services/notification.service';
 import { authenticate } from '../middlewares/auth.middleware';
 import { AppError } from '../utils/appError';
+import { getParam } from '../utils/params.util';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.patch(
     try {
       if (!req.user) throw AppError.unauthorized();
       const updated = await notificationService.markAsRead(
-        req.params.id,
+        getParam(req.params.id),
         req.user.userId
       );
 

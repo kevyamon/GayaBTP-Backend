@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { blogService } from '../services/blog.service';
 import { AppError } from '../utils/appError';
 import { BlogCategory } from '../models/blogPost.model';
+import { getParam } from '../utils/params.util';
 
 class BlogController {
   async getArticles(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,7 +33,7 @@ class BlogController {
 
   async getArticleBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const article = await blogService.getArticleBySlug(req.params.slug);
+      const article = await blogService.getArticleBySlug(getParam(req.params.slug));
       res.status(200).json({
         success: true,
         data: article,
@@ -45,7 +46,7 @@ class BlogController {
   async getSimilarArticles(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const category = req.query.category as BlogCategory;
-      const slug = req.params.slug;
+      const slug = getParam(req.params.slug);
 
       if (!category) {
         throw AppError.badRequest('La categorie est obligatoire pour trouver des articles similaires.');
@@ -82,7 +83,7 @@ class BlogController {
 
   async updateArticle(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const updated = await blogService.updateArticle(req.params.id, req.body);
+      const updated = await blogService.updateArticle(getParam(req.params.id), req.body);
       res.status(200).json({
         success: true,
         data: updated,
@@ -94,7 +95,7 @@ class BlogController {
 
   async deleteArticle(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await blogService.deleteArticle(req.params.id);
+      await blogService.deleteArticle(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Article supprime avec succes.' },

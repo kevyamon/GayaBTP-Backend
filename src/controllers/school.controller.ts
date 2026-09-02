@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { schoolService } from '../services/school.service';
+import { getParam } from '../utils/params.util';
 
 class SchoolController {
   async getSchools(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -30,7 +31,7 @@ class SchoolController {
 
   async getSchoolById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const school = await schoolService.getSchoolById(req.params.id);
+      const school = await schoolService.getSchoolById(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: school,
@@ -54,7 +55,7 @@ class SchoolController {
 
   async updateSchool(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const updated = await schoolService.updateSchool(req.params.id, req.body);
+      const updated = await schoolService.updateSchool(getParam(req.params.id), req.body);
       res.status(200).json({
         success: true,
         data: updated,
@@ -66,7 +67,7 @@ class SchoolController {
 
   async deleteSchool(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await schoolService.deleteSchool(req.params.id);
+      await schoolService.deleteSchool(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Etablissement supprime avec succes.' },

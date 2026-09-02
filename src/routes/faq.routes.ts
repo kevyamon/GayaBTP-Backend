@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { faqService } from '../services/faq.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { FaqCategory } from '../models/faq.model';
+import { getParam } from '../utils/params.util';
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.patch(
   authorize('admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const updated = await faqService.updateFaq(req.params.id, req.body);
+      const updated = await faqService.updateFaq(getParam(req.params.id), req.body);
       res.status(200).json({
         success: true,
         data: updated,
@@ -62,7 +63,7 @@ router.delete(
   authorize('admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await faqService.deleteFaq(req.params.id);
+      await faqService.deleteFaq(getParam(req.params.id));
       res.status(200).json({
         success: true,
         data: { message: 'Question/reponse supprimee avec succes.' },
