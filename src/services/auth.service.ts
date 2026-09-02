@@ -1,5 +1,6 @@
-import { User, IUser } from '../models/user.model';
-import { ProProfile, IProProfile } from '../models/proProfile.model';
+import { Types } from 'mongoose';
+import { User } from '../models/user.model';
+import { ProProfile } from '../models/proProfile.model';
 import { AppError } from '../utils/appError';
 import {
   generateAccessToken,
@@ -14,14 +15,47 @@ import {
 } from '../schemas/auth.schema';
 import { logger } from '../utils/logger';
 
+export interface SafeUser {
+  _id: string | Types.ObjectId;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  role: string;
+  status: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface SafeProProfile {
+  _id: string | Types.ObjectId;
+  userId: string | Types.ObjectId;
+  accountType: string;
+  companyName: string;
+  specialties: string[];
+  bio?: string;
+  yearsOfExperience?: number;
+  city: string;
+  district?: string;
+  phoneWhatsApp: string;
+  email: string;
+  verificationStatus: string;
+  isVerified: boolean;
+  isActive: boolean;
+  services?: unknown[];
+  projects?: unknown[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
 
 export interface AuthResult {
-  user: Partial<IUser>;
-  proProfile?: Partial<IProProfile> | null;
+  user: SafeUser;
+  proProfile?: SafeProProfile | null;
   tokens: AuthTokens;
 }
 
@@ -57,7 +91,10 @@ class AuthService {
 
     logger.info('AUTH', `Inscription d un nouveau particulier : ${user.email}`);
 
-    return { user: user.toJSON(), tokens };
+    return {
+      user: user.toJSON() as unknown as SafeUser,
+      tokens,
+    };
   }
 
   async registerProfessionnel(input: RegisterProInput): Promise<AuthResult> {
@@ -112,8 +149,8 @@ class AuthService {
     logger.info('AUTH', `Inscription d un nouveau professionnel : ${user.email} (${input.companyName})`);
 
     return {
-      user: user.toJSON(),
-      proProfile: proProfile.toJSON(),
+      user: user.toJSON() as unknown as SafeUser,
+      proProfile: proProfile.toJSON() as unknown as SafeProProfile,
       tokens,
     };
   }
@@ -128,7 +165,7 @@ class AuthService {
       throw AppError.forbidden('Ce compte est temporairement suspendu. Veuillez contacter le support.');
     }
 
-    let proProfile: IProProfile | null = null;
+    let proProfile = null;
     if (user.role === 'professionnel') {
       proProfile = await ProProfile.findOne({ userId: user._id });
     }
@@ -150,8 +187,8 @@ class AuthService {
     logger.info('AUTH', `Connexion reussie de l utilisateur : ${user.email} [${user.role}]`);
 
     return {
-      user: user.toJSON(),
-      proProfile: proProfile ? proProfile.toJSON() : null,
+      user: user.toJSON() as unknown as SafeUser,
+      proProfile: proProfile ? (proProfile.toJSON() as unknown as SafeProProfile) : null,
       tokens,
     };
   }
@@ -183,18 +220,18 @@ class AuthService {
     };
   }
 
-  async getMe(userId: string): Promise<{ user: Partial<IUser>; proProfile?: Partial<IProProfile> | null }> {
+  async getMe(userId: string): Promise<{ user: SafeUser; proProfile?: SafeProProfile | null }> {
     const user = await User.findById(userId).lean();
     if (!user) {
       throw AppError.notFound('Utilisateur introuvable.');
     }
 
-    let proProfile: Partial<IProProfile> | null = null;
+    let proProfile: SafeProProfile | null = null;
     if (user.role === 'professionnel') {
-      proProfile = await ProProfile.findOne({ userId: user._id }).lean();
+      proProfile = (await ProProfile.findOne({ userId: user._id }).lean()) as unknown as SafeProProfile;
     }
 
-    return { user, proProfile };
+    return { user: user as unknown as SafeUser, proProfile };
   }
 
   async revokeAllSessions(userId: string): Promise<void> {
