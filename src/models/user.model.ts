@@ -80,11 +80,9 @@ const userSchema = new Schema<IUser>(
   {
     timestamps: true,
     toJSON: {
-      transform: (_doc, ret) => {
-        const obj = { ...ret };
-        delete obj.password;
-        delete obj.__v;
-        return obj;
+      transform: (_doc, ret: Record<string, unknown>) => {
+        const { password, __v, ...cleanObj } = ret;
+        return cleanObj;
       },
     },
   }
