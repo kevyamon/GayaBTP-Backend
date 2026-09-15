@@ -12,6 +12,7 @@ import verificationPortalRoutes from './verificationPortal.routes';
 import calculatorRoutes from './calculator.routes';
 import paymentRoutes from './payment.routes';
 import adminRoutes from './admin.routes';
+import configRoutes from './config.routes';
 
 const apiRouter = Router();
 
@@ -53,6 +54,9 @@ apiRouter.use('/payments', paymentRoutes);
 
 // 13. Module Dashboard Administrateur
 apiRouter.use('/admin', adminRoutes);
+
+// 14. Module Configuration Globale & Mode Gratuit
+apiRouter.use('/config', configRoutes);
 
 // Informations de statut de l'API v1
 apiRouter.get('/', (_req: Request, res: Response) => {

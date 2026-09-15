@@ -5,6 +5,7 @@ import { SubscriptionPlan } from '../models/subscriptionPlan.model';
 import { VerificationPortal } from '../models/verificationPortal.model';
 import { Faq } from '../models/faq.model';
 import { School } from '../models/school.model';
+import { SystemSetting } from '../models/systemSetting.model';
 import { logger } from '../utils/logger';
 
 const seedDatabase = async () => {
@@ -12,14 +13,26 @@ const seedDatabase = async () => {
     logger.info('SYSTEM', 'Demarrage du script de peuplement initial (Seed GayaBTP)...');
     await mongoose.connect(env.MONGODB_URI);
 
-    // 1. Initialisation des Plans d'Abonnement officiels
+    // 1. Initialisation de la Configuration Globale (Mode Gratuit de Lancement)
+    const configExists = await SystemSetting.findOne({ key: 'global_config' });
+    if (!configExists) {
+      await SystemSetting.create({
+        key: 'global_config',
+        isFreeModeEnabled: true,
+        freeModeBannerMessage:
+          'Offre de lancement : Toutes les fonctionnalités professionnelles sont actuellement 100% gratuites.',
+      });
+      logger.info('SYSTEM', 'Configuration globale initialisee avec Mode Gratuit ACTIF par defaut.');
+    }
+
+    // 2. Initialisation des Plans d Abonnement de lancement
     const plansCount = await SubscriptionPlan.countDocuments();
     if (plansCount === 0) {
       await SubscriptionPlan.create([
         {
           name: 'Starter',
           slug: 'starter',
-          priceFCFA: 15000,
+          priceFCFA: 1000,
           durationDays: 30,
           maxServices: 3,
           maxBioChars: 300,
@@ -32,7 +45,7 @@ const seedDatabase = async () => {
         {
           name: 'Pro',
           slug: 'pro',
-          priceFCFA: 35000,
+          priceFCFA: 2500,
           durationDays: 30,
           maxServices: 8,
           maxBioChars: 800,
@@ -45,7 +58,7 @@ const seedDatabase = async () => {
         {
           name: 'Premium',
           slug: 'premium',
-          priceFCFA: 65000,
+          priceFCFA: 5000,
           durationDays: 30,
           maxServices: -1, // Illimite
           maxBioChars: 2000,
@@ -56,10 +69,10 @@ const seedDatabase = async () => {
           isActive: true,
         },
       ]);
-      logger.info('SYSTEM', 'Plans d abonnement Starter, Pro et Premium initialises avec succes.');
+      logger.info('SYSTEM', 'Plans d abonnement de lancement (1000, 2500, 5000 FCFA) initialises.');
     }
 
-    // 2. Initialisation des Portails Fonciers Officiels de l'Etat de Cote d'Ivoire
+    // 3. Initialisation des Portails Fonciers Officiels de Cote d Ivoire
     const portalsCount = await VerificationPortal.countDocuments();
     if (portalsCount === 0) {
       await VerificationPortal.create([
@@ -68,7 +81,7 @@ const seedDatabase = async () => {
           slug: 'idufci',
           officialEntity: 'Ministere de la Construction, du Logement et de l Urbanisme (MCLU)',
           url: 'https://idufci.mclu.gouv.ci',
-          description: 'Portail d attribution et de suivi de l Identifiant Unique du Foncier de Cote d Ivoire pour la securisation des parcelles.',
+          description: 'Portail d attribution et de suivi de l Identifiant Unique du Foncier de Cote d Ivoire.',
           order: 1,
           isActive: true,
         },
@@ -77,7 +90,7 @@ const seedDatabase = async () => {
           slug: 'livre-foncier-dgi',
           officialEntity: 'Direction Generale des Impots (DGI)',
           url: 'https://dgi.gouv.ci',
-          description: 'Consultation et verification de la situation fiscale et juridique des titres fonciers enregistres.',
+          description: 'Consultation et verification de la situation fiscale et juridique des titres fonciers.',
           order: 2,
           isActive: true,
         },
@@ -86,7 +99,7 @@ const seedDatabase = async () => {
           slug: 'mclu-officiel',
           officialEntity: 'Gouvernement de Cote d Ivoire',
           url: 'https://construction.gouv.ci',
-          description: 'Portail officiel pour les demandes d ACD (Arrete de Concession Definitive) et permis de construire.',
+          description: 'Portail officiel pour les demandes d ACD et permis de construire.',
           order: 3,
           isActive: true,
         },
@@ -103,20 +116,20 @@ const seedDatabase = async () => {
       logger.info('SYSTEM', 'Portails fonciers d Etat initialises avec succes.');
     }
 
-    // 3. Initialisation de questions FAQ de base
+    // 4. Initialisation de questions FAQ
     const faqCount = await Faq.countDocuments();
     if (faqCount === 0) {
       await Faq.create([
         {
           question: 'Qu est-ce que l ACD et pourquoi est-il indispensable ?',
-          answer: 'L Arrete de Concession Definitive (ACD) est le seul titre juridique de propriete fonciere reconnu en zone urbaine en Cote d Ivoire conférant une pleine propriete inattaquable.',
+          answer: 'L Arrete de Concession Definitive (ACD) est le seul titre juridique de propriete fonciere reconnu en zone urbaine en Cote d Ivoire.',
           category: 'foncier',
           order: 1,
           status: 'published',
         },
         {
           question: 'Comment obtenir le Badge Verifie GayaBTP ?',
-          answer: 'Rendez-vous sur votre espace professionnel, onglet Certification, et soumettez votre piece d identite ainsi que votre registre de commerce ou agrement technique.',
+          answer: 'Rendez-vous sur votre espace professionnel et soumettez votre piece d identite et registre de commerce.',
           category: 'certification',
           order: 2,
           status: 'published',
@@ -125,7 +138,7 @@ const seedDatabase = async () => {
       logger.info('SYSTEM', 'FAQ prechargee avec succes.');
     }
 
-    // 4. Initialisation d'etablissements techniques de reference
+    // 5. Initialisation des Etablissements Techniques
     const schoolCount = await School.countDocuments();
     if (schoolCount === 0) {
       await School.create([
@@ -141,25 +154,25 @@ const seedDatabase = async () => {
           name: 'INP-HB — Institut National Polytechnique Felix Houphouet-Boigny',
           city: 'Yamoussoukro',
           specialties: ['Genie civil', 'Architecture', 'Travaux Publics', 'Topographie'],
-          description: 'Grande ecole d ingenieur de renommee continentale formant les cadres du BTP et des infrastructures.',
+          description: 'Grande ecole d ingenieur de renommee continentale formant les cadres du BTP.',
           status: 'published',
         },
       ]);
       logger.info('SYSTEM', 'Etablissements techniques de reference initialises.');
     }
 
-    // 5. Initialisation du premier Super Administrateur
+    // 6. Super Administrateur
     const adminExists = await User.findOne({ role: 'admin' });
     if (!adminExists) {
       await User.create({
         name: 'Administrateur Principal',
         email: 'admin@gayabtp.ci',
-        password: 'AdminPassword2026!', // A modifier apres premiere connexion
+        password: 'AdminPassword2026!',
         phone: '+2250700000000',
         role: 'admin',
         status: 'active',
       });
-      logger.info('SYSTEM', 'Compte Super Administrateur cree : admin@gayabtp.ci (Mot de passe initial : AdminPassword2026!)');
+      logger.info('SYSTEM', 'Compte Super Admin cree : admin@gayabtp.ci (Mot de passe initial : AdminPassword2026!)');
     }
 
     logger.info('SYSTEM', 'Peuplement initial termine avec succes !');

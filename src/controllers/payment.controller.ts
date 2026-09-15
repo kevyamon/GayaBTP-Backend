@@ -1,9 +1,49 @@
 import { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../services/payment.service';
 import { verificationService } from '../services/verification.service';
+import { geniusPayService } from '../services/geniusPay.service';
 import { AppError } from '../utils/appError';
+import { logger } from '../utils/logger';
 
 class PaymentController {
+  async initiatePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw AppError.unauthorized();
+      const result = await paymentService.initiateSubscriptionPayment(
+        req.user.userId,
+        req.body
+      );
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async handleGeniusPayWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const signature = (req.headers['x-geniuspay-signature'] ||
+        req.headers['x-signature'] ||
+        '') as string;
+
+      const rawBody = JSON.stringify(req.body);
+      const isSignatureValid = geniusPayService.verifyWebhookSignature(rawBody, signature);
+
+      if (!isSignatureValid) {
+        logger.warn('PAYMENT', 'Webhook Genius Pay rejeté : Signature cryptographique invalide.');
+        res.status(401).json({ error: 'Signature invalide.' });
+        return;
+      }
+
+      await paymentService.processGeniusPayWebhook(req.body);
+      res.status(200).json({ success: true, received: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async submitPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw AppError.unauthorized();

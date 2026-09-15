@@ -43,6 +43,11 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   COMMERCIAL_MODE: z.enum(['free', 'paid']).default('free'),
+  GENIUS_PAY_API_KEY: z.string().default(''),
+  GENIUS_PAY_SECRET_KEY: z.string().default(''),
+  GENIUS_PAY_WEBHOOK_SECRET: z.string().default(''),
+  GENIUS_PAY_BASE_URL: z.string().default('https://api.geniuspay.ci'),
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
 });
 
 // Analyse et validation
