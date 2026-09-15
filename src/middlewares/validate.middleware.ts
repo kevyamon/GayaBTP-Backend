@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { ZodSchema, ZodError } from 'zod';
 
 interface ValidationSchema {
-  body?: AnyZodObject;
-  query?: AnyZodObject;
-  params?: AnyZodObject;
+  body?: ZodSchema;
+  query?: ZodSchema;
+  params?: ZodSchema;
 }
 
 export const validate = (schema: ValidationSchema) => {

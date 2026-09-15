@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import authRoutes from './auth.routes';
 import proRoutes from './pro.routes';
 import listingRoutes from './listing.routes';
@@ -55,7 +55,7 @@ apiRouter.use('/payments', paymentRoutes);
 apiRouter.use('/admin', adminRoutes);
 
 // Informations de statut de l'API v1
-apiRouter.get('/', (_req, res) => {
+apiRouter.get('/', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     data: {
