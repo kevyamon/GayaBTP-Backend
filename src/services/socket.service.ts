@@ -4,10 +4,6 @@ import { env } from '../config/env.config';
 import { verifyAccessToken, AccessTokenPayload } from '../utils/token.util';
 import { logger } from '../utils/logger';
 
-interface SocketData {
-  user?: AccessTokenPayload;
-}
-
 class SocketService {
   private io: Server | null = null;
   private readonly connectedUsers = new Map<string, Set<string>>(); // userId -> Set<socketId>
