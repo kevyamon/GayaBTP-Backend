@@ -16,6 +16,7 @@ import {
   CreateAdminInviteInput,
 } from '../schemas/admin.schema';
 import { SafeUser, AuthTokens } from './auth.service';
+import { emailService } from './email.service';
 import { logger } from '../utils/logger';
 
 export interface AdminAuthResult {
@@ -122,6 +123,12 @@ class AdminAuthService {
     // 1. Cas Inscription SuperAdmin via clé maître (AD_PW)
     if (input.masterKey) {
       if (input.masterKey !== env.AD_PW) {
+        emailService.sendAdminSecurityAlert({
+          incidentType: 'Tentative d Inscription SuperAdmin avec Clé Maître Invalide',
+          details: `Une tentative d enregistrement avec une fausse clé maître a été interceptée pour l adresse e-mail : ${cleanEmail}.`,
+          metadata: { email: cleanEmail, date: new Date().toISOString() },
+        }).catch((err) => logger.error('SECURITY', 'Échec alerte admin sécurité', err));
+
         throw AppError.forbidden('Clé maître SuperAdmin invalide.');
       }
 

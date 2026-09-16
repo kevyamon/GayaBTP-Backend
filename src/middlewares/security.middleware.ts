@@ -47,12 +47,17 @@ export const globalRateLimiter = rateLimit({
   },
 });
 
-// 4. Limiteur de requetes sensible (Authentification / Inscription)
+// 4. Limiteur de requetes sensible (Authentification / Inscription avec cle composite IP + Email)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 15, // 15 tentatives max pour eviter le brute-force
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request): string => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : '';
+    return email ? `${ip}_${email}` : ip;
+  },
   handler: (_req: Request, _res: Response, next: NextFunction) => {
     next(
       new AppError(
@@ -67,13 +72,40 @@ export const authRateLimiter = rateLimit({
 // 5. Limiteur de requetes strict pour la reinitialisation de mot de passe (Anti Brute-Force OTP)
 export const passwordResetRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 3, // 3 requetes max par minute par IP
+  max: 3, // 3 requetes max par minute par IP et compte
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request): string => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : '';
+    return email ? `${ip}_${email}` : ip;
+  },
   handler: (_req: Request, _res: Response, next: NextFunction) => {
     next(
       new AppError(
         'Trop de demandes de reinitialisation. Veuillez patienter une minute avant de reessayer.',
+        429,
+        'RATE_LIMIT_EXCEEDED'
+      )
+    );
+  },
+});
+
+// 6. Limiteur ultra-renforce pour le Backoffice Administrateur (5 tentatives max par fenetre de 15 min)
+export const adminAuthRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Seuil tres strict pour l acces d administration
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request): string => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : '';
+    return email ? `admin_${ip}_${email}` : `admin_${ip}`;
+  },
+  handler: (_req: Request, _res: Response, next: NextFunction) => {
+    next(
+      new AppError(
+        'Trop de tentatives d acces au panneau d administration. Acces temporairement verrouille.',
         429,
         'RATE_LIMIT_EXCEEDED'
       )

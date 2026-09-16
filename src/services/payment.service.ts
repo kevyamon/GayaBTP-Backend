@@ -81,15 +81,24 @@ class PaymentService {
       (payload.data.status === 'completed' || (payload.data.status as string) === 'successful');
 
     if (isSuccess) {
-      // Sécurité Forteresse : Vérification du montant payé vs attendu
+      // Sécurité Forteresse : Détection et blocage de toute altération de montant (Underpayment Fraud)
       if (payload.data.amount < payment.amountFCFA) {
-        logger.error(
-          'PAYMENT',
-          `Montant payé invalide pour ${orderRef}: ${payload.data.amount} < ${payment.amountFCFA}`
-        );
+        logger.error('PAYMENT', `Montant frauduleux pour ${orderRef}: ${payload.data.amount} < ${payment.amountFCFA}`);
         payment.status = 'rejected';
-        payment.adminNotes = `Fraude potentielle: montant payé (${payload.data.amount}) inférieur au montant requis (${payment.amountFCFA})`;
+        payment.adminNotes = `Fraude bloquée: montant payé (${payload.data.amount}) < montant requis (${payment.amountFCFA})`;
         await payment.save();
+
+        emailService.sendAdminSecurityAlert({
+          incidentType: 'Tentative de Fraude au Paiement (Sous-Paiement)',
+          details: `Une transaction avec un montant inférieur au plan souscrit a été automatiquement rejetée. Référence : ${orderRef}.`,
+          metadata: {
+            reference: orderRef,
+            montantRequis: `${payment.amountFCFA} FCFA`,
+            montantEnvoye: `${payload.data.amount} FCFA`,
+            clientUserId: payment.userId.toString(),
+          },
+        }).catch((err) => logger.error('SECURITY', 'Échec alerte admin sécurité', err));
+
         return false;
       }
 

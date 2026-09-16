@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { adminController } from '../controllers/admin.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-import { authRateLimiter } from '../middlewares/security.middleware';
+import { adminAuthRateLimiter } from '../middlewares/security.middleware';
 import {
   adminLoginSchema,
   adminRegisterSchema,
@@ -24,7 +24,7 @@ router.get('/auth/setup-status', adminController.checkSetupStatus);
 // Connexion dédiée au Backoffice Administrateur
 router.post(
   '/auth/login',
-  authRateLimiter,
+  adminAuthRateLimiter,
   validate({ body: adminLoginSchema }),
   adminController.login
 );
@@ -32,7 +32,7 @@ router.post(
 // Inscription Administrateur (SuperAdmin initial avec AD_PW ou Sous-Admin avec code temporaire)
 router.post(
   '/auth/register',
-  authRateLimiter,
+  adminAuthRateLimiter,
   validate({ body: adminRegisterSchema }),
   adminController.register
 );

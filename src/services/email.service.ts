@@ -6,7 +6,9 @@ import {
   getPasswordChangedAlertHtml,
   getWelcomeEmailHtml,
   getSubscriptionReceiptHtml,
+  getAdminSecurityAlertHtml,
   SubscriptionReceiptPayload,
+  AdminSecurityAlertPayload,
 } from '../utils/emailTemplates';
 import {
   getVerificationSubmittedHtml,
@@ -200,7 +202,23 @@ class EmailService {
       htmlContent: getListingAlertMatchHtml(data),
     });
   }
+
+  /**
+   * 9. Envoi d une alerte critique de sécurité système à l administrateur
+   */
+  async sendAdminSecurityAlert(payload: AdminSecurityAlertPayload): Promise<boolean> {
+    const adminEmail = env.ADMIN_EMAIL || env.EMAIL_FROM;
+    return this.sendEmail({
+      to: adminEmail,
+      subject: `[ALERTE SECURITE GAYABTP] ${payload.incidentType}`,
+      htmlContent: getAdminSecurityAlertHtml(payload),
+    });
+  }
 }
 
 export const emailService = new EmailService();
-export { SubscriptionReceiptPayload, ListingAlertMatchPayload };
+export {
+  SubscriptionReceiptPayload,
+  ListingAlertMatchPayload,
+  AdminSecurityAlertPayload,
+};

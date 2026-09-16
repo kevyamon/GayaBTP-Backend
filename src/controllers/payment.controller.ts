@@ -30,7 +30,9 @@ class PaymentController {
         '') as string;
       const timestamp = (req.headers['x-webhook-timestamp'] || '') as string;
 
-      const rawBody = JSON.stringify(req.body);
+      const rawBody =
+        (req as Request & { rawBody?: string }).rawBody ||
+        JSON.stringify(req.body);
       const isSignatureValid = geniusPayService.verifyWebhookSignature(
         rawBody,
         signature,

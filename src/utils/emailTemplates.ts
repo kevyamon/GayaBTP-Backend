@@ -206,3 +206,58 @@ ${BASE_CONTAINER_START('Confirmation de votre abonnement GayaBTP')}
   </div>
 ${BASE_CONTAINER_END}
 `;
+
+/**
+ * 5. Gabarit Alerte de Sécurité Système Administrateur (Incident & Fraude)
+ */
+export interface AdminSecurityAlertPayload {
+  incidentType: string;
+  details: string;
+  metadata?: Record<string, unknown>;
+  dateFormatted?: string;
+}
+
+export const getAdminSecurityAlertHtml = (payload: AdminSecurityAlertPayload): string => {
+  const dateStr = payload.dateFormatted || new Date().toLocaleString('fr-FR');
+  const metadataRows = payload.metadata
+    ? Object.entries(payload.metadata)
+        .map(
+          ([k, v]) => `
+      <tr>
+        <td style="padding: 8px 12px; color: #94A3B8; font-size: 12px; border-bottom: 1px solid #1E293B;">${k} :</td>
+        <td style="padding: 8px 12px; color: #FFFFFF; font-size: 12px; font-family: monospace; text-align: right; border-bottom: 1px solid #1E293B;">${String(v)}</td>
+      </tr>`
+        )
+        .join('')
+    : '';
+
+  return `
+${BASE_CONTAINER_START('Alerte de Sécurité Système — GayaBTP')}
+  <div style="padding: 36px 28px; text-align: left;">
+    <div style="display: inline-block; padding: 4px 12px; background-color: #EF4444; color: #FFFFFF; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 16px;">
+      Incident de Sécurité Détecté
+    </div>
+    <h1 style="color: #FFFFFF; font-size: 19px; margin: 0 0 12px 0; font-weight: 600;">
+      ${payload.incidentType}
+    </h1>
+    <p style="color: #CBD5E1; font-size: 13px; line-height: 20px; margin: 0 0 20px 0;">
+      ${payload.details}
+    </p>
+
+    ${
+      metadataRows
+        ? `
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0F172A; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
+      ${metadataRows}
+    </table>
+    `
+        : ''
+    }
+
+    <p style="color: #64748B; font-size: 11px; margin: 0;">
+      Horodatage serveur : <strong>${dateStr}</strong>
+    </p>
+  </div>
+${BASE_CONTAINER_END}
+`;
+};
