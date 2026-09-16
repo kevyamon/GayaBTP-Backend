@@ -58,26 +58,35 @@ class PaymentService {
   }
 
   async processGeniusPayWebhook(payload: GeniusPayWebhookPayload): Promise<boolean> {
-    const { reference, status, amount } = payload.data;
-    const payment = await Payment.findOne({ reference });
+    const orderRef = payload.data.metadata?.order_id || payload.data.reference;
+    const payment = await Payment.findOne({
+      $or: [{ reference: orderRef }, { reference: payload.data.reference }],
+    });
 
     if (!payment) {
-      logger.warn('PAYMENT', `Webhook reçu pour référence inconnue : ${reference}`);
+      logger.warn('PAYMENT', `Webhook reçu pour référence inconnue : ${orderRef}`);
       return false;
     }
 
     // Idempotence : Ne pas retraiter un paiement déjà vérifié
     if (payment.status === 'verified') {
-      logger.info('PAYMENT', `Paiement ${reference} déjà vérifié (idempotent).`);
+      logger.info('PAYMENT', `Paiement ${orderRef} déjà vérifié (idempotent).`);
       return true;
     }
 
-    if (payload.event === 'payment.success' && status === 'successful') {
+    const isSuccess =
+      payload.event === 'payment.success' &&
+      (payload.data.status === 'completed' || (payload.data.status as string) === 'successful');
+
+    if (isSuccess) {
       // Sécurité Forteresse : Vérification du montant payé vs attendu
-      if (amount < payment.amountFCFA) {
-        logger.error('PAYMENT', `Montant payé invalide pour ${reference}: ${amount} < ${payment.amountFCFA}`);
+      if (payload.data.amount < payment.amountFCFA) {
+        logger.error(
+          'PAYMENT',
+          `Montant payé invalide pour ${orderRef}: ${payload.data.amount} < ${payment.amountFCFA}`
+        );
         payment.status = 'rejected';
-        payment.adminNotes = `Fraude potentielle: montant payé (${amount}) inférieur au montant requis (${payment.amountFCFA})`;
+        payment.adminNotes = `Fraude potentielle: montant payé (${payload.data.amount}) inférieur au montant requis (${payment.amountFCFA})`;
         await payment.save();
         return false;
       }
@@ -119,14 +128,14 @@ class PaymentService {
         action: 'WEBHOOK_PAYMENT_SUCCESS',
         resource: 'payment',
         resourceId: payment._id.toString(),
-        metadata: { reference, amount: payment.amountFCFA, plan: plan.name },
+        metadata: { reference: payment.reference, amount: payment.amountFCFA, plan: plan.name },
       });
 
-      logger.info('PAYMENT', `Paiement ${reference} validé avec succès par webhook Genius Pay.`);
+      logger.info('PAYMENT', `Paiement ${payment.reference} validé avec succès par webhook Genius Pay.`);
       return true;
     } else {
       payment.status = 'rejected';
-      payment.adminNotes = 'Paiement échoué ou annulé auprès de Genius Pay.';
+      payment.adminNotes = `Paiement non complété. Événement : ${payload.event}, Statut : ${payload.data.status}`;
       await payment.save();
       return true;
     }

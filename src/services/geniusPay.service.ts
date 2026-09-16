@@ -20,38 +20,52 @@ export interface PaymentSessionResult {
 }
 
 export interface GeniusPayWebhookPayload {
-  event: 'payment.success' | 'payment.failed';
+  id: string;
+  event: 'payment.initiated' | 'payment.success' | 'payment.failed' | 'payment.cancelled' | 'payment.expired';
+  timestamp: number;
+  created_at: string;
   data: {
+    object: string;
+    id: number;
     reference: string;
-    transaction_id: string;
     amount: number;
     currency: string;
-    status: 'successful' | 'failed';
-    customer: {
-      email?: string;
-      phone?: string;
-      name?: string;
+    fees?: number;
+    net_amount?: number;
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'expired';
+    payment_method?: string;
+    provider?: string;
+    customer_name?: string;
+    customer_phone?: string;
+    merchant_id?: number;
+    metadata?: {
+      order_id?: string;
+      user_id?: string;
+      plan_id?: string;
+      payment_id?: string;
+      plan_slug?: string;
+      [key: string]: unknown;
     };
-    paid_at?: string;
-    custom_data?: Record<string, unknown>;
   };
+  environment: 'sandbox' | 'live';
+  api_version?: string;
 }
 
 class GeniusPayService {
-  private readonly baseUrl = env.GENIUS_PAY_BASE_URL;
+  private readonly baseUrl = 'https://geniuspay.ci/api/v1/merchant';
   private readonly apiKey = env.GENIUS_PAY_API_KEY;
+  private readonly apiSecret = env.GENIUS_PAY_SECRET_KEY;
   private readonly webhookSecret = env.GENIUS_PAY_WEBHOOK_SECRET;
 
   async createPaymentSession(params: CreatePaymentSessionParams): Promise<PaymentSessionResult> {
-    const callbackUrl = `${env.FRONTEND_URL}/dashboard/abonnement/success?ref=${params.reference}`;
-    const cancelUrl = `${env.FRONTEND_URL}/dashboard/abonnement/cancel?ref=${params.reference}`;
-    const webhookUrl = `${env.NODE_ENV === 'production' ? 'https://api.gayabtp.ci' : 'http://localhost:5000'}/api/v1/payments/webhook/geniuspay`;
+    const successUrl = `${env.FRONTEND_URL}/dashboard/abonnement/success?ref=${params.reference}`;
+    const errorUrl = `${env.FRONTEND_URL}/dashboard/abonnement/cancel?ref=${params.reference}`;
 
-    // Si les clés Genius Pay ne sont pas encore configurées en environnement de dev/test
-    if (!this.apiKey) {
+    // Si les clés Genius Pay ne sont pas encore renseignées en local
+    if (!this.apiKey || !this.apiSecret) {
       logger.warn(
         'GENIUS_PAY',
-        `Clé API Genius Pay non configurée. Génération d'une URL de paiement de simulation pour ${params.reference}.`
+        `Clés API Genius Pay non configurées. Mode simulation pour ${params.reference}.`
       );
       return {
         checkoutUrl: `${env.FRONTEND_URL}/payment/simulation?reference=${params.reference}&amount=${params.amountFCFA}`,
@@ -61,71 +75,96 @@ class GeniusPayService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/v1/payments/initialize`, {
+      const response = await fetch(`${this.baseUrl}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          'X-API-Key': this.apiKey,
+          'X-API-Secret': this.apiSecret,
         },
         body: JSON.stringify({
-          reference: params.reference,
           amount: params.amountFCFA,
           currency: 'XOF',
           description: params.description,
-          customer_name: params.customerName,
-          customer_email: params.customerEmail,
-          customer_phone: params.customerPhone || '',
-          callback_url: callbackUrl,
-          cancel_url: cancelUrl,
-          webhook_url: webhookUrl,
-          metadata: params.customData || {},
+          customer: {
+            name: params.customerName,
+            email: params.customerEmail,
+            phone: params.customerPhone || '',
+          },
+          success_url: successUrl,
+          error_url: errorUrl,
+          metadata: {
+            order_id: params.reference,
+            ...(params.customData || {}),
+          },
         }),
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        logger.error('GENIUS_PAY', `Échec d'initialisation Genius Pay: ${response.status} - ${errorBody}`);
-        throw AppError.badRequest('Impossible d initialiser la passerelle de paiement. Veuillez reessayer.');
-      }
-
       const data = (await response.json()) as {
         success: boolean;
-        data?: { checkout_url: string; id?: string };
+        data?: {
+          id: number;
+          reference: string;
+          checkout_url: string;
+          payment_url: string;
+        };
+        error?: { code: string; message: string };
       };
 
-      if (!data.data?.checkout_url) {
-        throw AppError.internal('Réponse invalide de la passerelle de paiement.');
+      if (!response.ok || !data.success || !data.data?.checkout_url) {
+        const errorMsg = data.error?.message || `Status HTTP ${response.status}`;
+        logger.error('GENIUS_PAY', `Échec d'initialisation Genius Pay: ${errorMsg}`);
+        throw AppError.badRequest(`Échec de la passerelle de paiement : ${errorMsg}`);
       }
 
       return {
         checkoutUrl: data.data.checkout_url,
         transactionReference: params.reference,
-        providerReference: data.data.id,
+        providerReference: data.data.reference,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
       logger.error('GENIUS_PAY', 'Erreur réseau passerelle Genius Pay', error);
-      throw AppError.internal('Erreur de communication avec la passerelle de paiement.');
+      throw AppError.internal('Erreur de communication avec la passerelle Genius Pay.');
     }
   }
 
-  verifyWebhookSignature(rawBody: string, signature: string): boolean {
+  verifyWebhookSignature(rawBody: string, signature: string, timestampHeader?: string): boolean {
     if (!this.webhookSecret) {
-      // En mode développement si le secret n'est pas encore défini
       if (env.NODE_ENV !== 'production') return true;
       return false;
     }
 
     try {
-      const computedHash = crypto
+      if (!signature) return false;
+
+      // Construction de la donnée à vérifier : timestamp + '.' + json_payload
+      const dataToSign = timestampHeader ? `${timestampHeader}.${rawBody}` : rawBody;
+
+      const computedSignature = crypto
         .createHmac('sha256', this.webhookSecret)
-        .update(rawBody)
+        .update(dataToSign)
         .digest('hex');
 
-      return crypto.timingSafeEqual(
-        Buffer.from(computedHash, 'utf8'),
+      // Vérification sécurisée en temps constant contre les attaques de timing
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(computedSignature, 'utf8'),
         Buffer.from(signature, 'utf8')
       );
+
+      // Protection contre les Replay Attacks (délai max 5 minutes = 300s)
+      if (isValid && timestampHeader) {
+        const timestampNumber = parseInt(timestampHeader, 10);
+        if (!isNaN(timestampNumber)) {
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          if (Math.abs(currentTimestamp - timestampNumber) > 300) {
+            logger.warn('GENIUS_PAY', 'Rejet Webhook : Timestamp expiré (> 300 secondes).');
+            return false;
+          }
+        }
+      }
+
+      return isValid;
     } catch (error) {
       logger.error('GENIUS_PAY', 'Erreur lors de la validation HMAC de la signature webhook', error);
       return false;

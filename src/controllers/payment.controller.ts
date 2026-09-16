@@ -24,15 +24,21 @@ class PaymentController {
 
   async handleGeniusPayWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const signature = (req.headers['x-geniuspay-signature'] ||
+      const signature = (req.headers['x-webhook-signature'] ||
+        req.headers['x-geniuspay-signature'] ||
         req.headers['x-signature'] ||
         '') as string;
+      const timestamp = (req.headers['x-webhook-timestamp'] || '') as string;
 
       const rawBody = JSON.stringify(req.body);
-      const isSignatureValid = geniusPayService.verifyWebhookSignature(rawBody, signature);
+      const isSignatureValid = geniusPayService.verifyWebhookSignature(
+        rawBody,
+        signature,
+        timestamp
+      );
 
       if (!isSignatureValid) {
-        logger.warn('PAYMENT', 'Webhook Genius Pay rejeté : Signature cryptographique invalide.');
+        logger.warn('PAYMENT', 'Webhook Genius Pay rejeté : Signature cryptographique ou timestamp invalide.');
         res.status(401).json({ error: 'Signature invalide.' });
         return;
       }
