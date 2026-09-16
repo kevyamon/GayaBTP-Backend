@@ -1,11 +1,92 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminService } from '../services/admin.service';
+import { adminAuthService } from '../services/adminAuth.service';
+import { adminUserService } from '../services/adminUser.service';
 import { paymentService } from '../services/payment.service';
 import { verificationService } from '../services/verification.service';
+import {
+  REFRESH_COOKIE_NAME,
+  getRefreshCookieOptions,
+} from '../utils/token.util';
 import { AppError } from '../utils/appError';
 import { getParam } from '../utils/params.util';
 
 class AdminController {
+  // ==========================================
+  // 1. AUTHENTIFICATION & INVITATIONS ADMIN
+  // ==========================================
+
+  async checkSetupStatus(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const superAdminExists = await adminAuthService.checkSuperAdminExists();
+      res.status(200).json({ success: true, data: { superAdminExists } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await adminAuthService.login(req.body);
+
+      res.cookie(
+        REFRESH_COOKIE_NAME,
+        result.tokens.refreshToken,
+        getRefreshCookieOptions()
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          user: result.user,
+          accessToken: result.tokens.accessToken,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await adminAuthService.register(req.body);
+
+      res.cookie(
+        REFRESH_COOKIE_NAME,
+        result.tokens.refreshToken,
+        getRefreshCookieOptions()
+      );
+
+      res.status(201).json({
+        success: true,
+        data: {
+          user: result.user,
+          accessToken: result.tokens.accessToken,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw AppError.unauthorized();
+      const invitation = await adminAuthService.createInvitation(
+        req.user.userId,
+        req.user.email,
+        req.body
+      );
+      res.status(201).json({ success: true, data: invitation });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==========================================
+  // 2. DASHBOARD STATS
+  // ==========================================
+
   async getDashboard(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const stats = await adminService.getDashboardStats();
@@ -15,11 +96,15 @@ class AdminController {
     }
   }
 
+  // ==========================================
+  // 3. GESTION APPROFONDIE DES UTILISATEURS
+  // ==========================================
+
   async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const page = parseInt(req.query.page as string, 10) || 1;
       const limit = parseInt(req.query.limit as string, 10) || 20;
-      const result = await adminService.getUsers(
+      const result = await adminUserService.getUsers(
         page,
         limit,
         req.query.search as string,
@@ -32,12 +117,22 @@ class AdminController {
     }
   }
 
+  async getUserDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const details = await adminUserService.getUserDetails(getParam(req.params.id));
+      res.status(200).json({ success: true, data: details });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateUserStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw AppError.unauthorized();
-      const user = await adminService.updateUserStatus(
+      const user = await adminUserService.updateUserStatus(
         getParam(req.params.id),
         req.body.status,
+        req.body.reason,
         req.user.userId,
         req.user.email
       );
@@ -50,9 +145,10 @@ class AdminController {
   async updateUserRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw AppError.unauthorized();
-      const user = await adminService.updateUserRole(
+      const user = await adminUserService.updateUserRole(
         getParam(req.params.id),
         req.body.role,
+        req.body.reason,
         req.user.userId,
         req.user.email
       );
@@ -61,6 +157,25 @@ class AdminController {
       next(error);
     }
   }
+
+  async banUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw AppError.unauthorized();
+      const user = await adminUserService.banUser(
+        getParam(req.params.id),
+        req.body.reason,
+        req.user.userId,
+        req.user.email
+      );
+      res.status(200).json({ success: true, data: user });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==========================================
+  // 4. ANNONCES, PAIEMENTS & CERTIFICATIONS
+  // ==========================================
 
   async getListings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

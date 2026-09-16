@@ -52,6 +52,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default('contactgayabtp@gmail.com'),
   EMAIL_FROM_NAME: z.string().default('GayaBTP'),
   ADMIN_EMAIL: z.string().default('admin@gayabtp.com'),
+  AD_PW: z.string().default('GayaSuperAdmin2026!'),
 });
 
 // Analyse et validation
