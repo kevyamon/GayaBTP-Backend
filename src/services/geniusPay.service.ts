@@ -64,7 +64,7 @@ class GeniusPayService {
     // Si les clés Genius Pay ne sont pas encore renseignées en local
     if (!this.apiKey || !this.apiSecret) {
       logger.warn(
-        'GENIUS_PAY',
+        'PAYMENT',
         `Clés API Genius Pay non configurées. Mode simulation pour ${params.reference}.`
       );
       return {
@@ -113,7 +113,7 @@ class GeniusPayService {
 
       if (!response.ok || !data.success || !data.data?.checkout_url) {
         const errorMsg = data.error?.message || `Status HTTP ${response.status}`;
-        logger.error('GENIUS_PAY', `Échec d'initialisation Genius Pay: ${errorMsg}`);
+        logger.error('PAYMENT', `Échec d'initialisation Genius Pay: ${errorMsg}`);
         throw AppError.badRequest(`Échec de la passerelle de paiement : ${errorMsg}`);
       }
 
@@ -124,7 +124,7 @@ class GeniusPayService {
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      logger.error('GENIUS_PAY', 'Erreur réseau passerelle Genius Pay', error);
+      logger.error('PAYMENT', 'Erreur réseau passerelle Genius Pay', error);
       throw AppError.internal('Erreur de communication avec la passerelle Genius Pay.');
     }
   }
@@ -158,7 +158,7 @@ class GeniusPayService {
         if (!isNaN(timestampNumber)) {
           const currentTimestamp = Math.floor(Date.now() / 1000);
           if (Math.abs(currentTimestamp - timestampNumber) > 300) {
-            logger.warn('GENIUS_PAY', 'Rejet Webhook : Timestamp expiré (> 300 secondes).');
+            logger.warn('PAYMENT', 'Rejet Webhook : Timestamp expiré (> 300 secondes).');
             return false;
           }
         }
@@ -166,7 +166,7 @@ class GeniusPayService {
 
       return isValid;
     } catch (error) {
-      logger.error('GENIUS_PAY', 'Erreur lors de la validation HMAC de la signature webhook', error);
+      logger.error('PAYMENT', 'Erreur lors de la validation HMAC de la signature webhook', error);
       return false;
     }
   }

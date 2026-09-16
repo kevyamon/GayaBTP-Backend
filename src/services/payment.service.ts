@@ -141,6 +141,88 @@ class PaymentService {
     }
   }
 
+  async adminVerifyPayment(
+    adminUserId: string,
+    adminEmail: string,
+    paymentId: string,
+    action: 'approve' | 'reject',
+    notes?: string
+  ): Promise<IPayment> {
+    if (!Types.ObjectId.isValid(paymentId)) {
+      throw AppError.badRequest('Identifiant de paiement invalide.');
+    }
+
+    const payment = await Payment.findById(paymentId);
+    if (!payment) throw AppError.notFound('Paiement introuvable.');
+
+    const plan = await SubscriptionPlan.findById(payment.planId);
+    if (!plan) throw AppError.notFound('Plan associe introuvable.');
+
+    if (action === 'approve') {
+      payment.status = 'verified';
+      payment.adminValidatorId = new Types.ObjectId(adminUserId);
+      payment.adminNotes = notes || 'Paiement approuve par l administration';
+      payment.verifiedAt = new Date();
+      await payment.save();
+
+      const startDate = new Date();
+      const endDate = new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000);
+
+      const subscription = await Subscription.create({
+        userId: payment.userId,
+        planId: plan._id,
+        status: 'active',
+        startDate,
+        endDate,
+        paymentId: payment._id,
+      });
+
+      await ProProfile.findOneAndUpdate(
+        { userId: payment.userId },
+        { $set: { subscriptionId: subscription._id, hasProBadge: plan.hasProBadge } }
+      );
+
+      await notificationService.createNotification({
+        userId: payment.userId,
+        type: 'PAYMENT_VERIFIED',
+        title: 'Paiement valide — Abonnement active',
+        message: `Votre reglement de ${payment.amountFCFA.toLocaleString('fr-FR')} FCFA pour la formule ${plan.name} a ete valide avec succes. Vos avantages sont desormais actifs jusqu au ${endDate.toLocaleDateString('fr-FR')}.`,
+        data: { paymentId: payment._id.toString(), planSlug: plan.slug },
+      });
+
+      await AuditLog.create({
+        actor: { userId: new Types.ObjectId(adminUserId), email: adminEmail, role: 'admin' },
+        action: 'admin_approved_payment',
+        resource: 'payment',
+        resourceId: payment._id.toString(),
+        metadata: { amount: payment.amountFCFA, plan: plan.name },
+      });
+    } else {
+      payment.status = 'rejected';
+      payment.adminValidatorId = new Types.ObjectId(adminUserId);
+      payment.adminNotes = notes || 'Preuve de paiement rejetee.';
+      await payment.save();
+
+      await notificationService.createNotification({
+        userId: payment.userId,
+        type: 'PAYMENT_REJECTED',
+        title: 'Paiement non valide',
+        message: `Votre preuve de paiement pour la formule ${plan.name} n a pas pu etre validee. Motif : ${notes || 'Justificatif non conforme'}.`,
+        data: { paymentId: payment._id.toString() },
+      });
+
+      await AuditLog.create({
+        actor: { userId: new Types.ObjectId(adminUserId), email: adminEmail, role: 'admin' },
+        action: 'admin_rejected_payment',
+        resource: 'payment',
+        resourceId: payment._id.toString(),
+        metadata: { reason: notes },
+      });
+    }
+
+    return payment;
+  }
+
   async getUserPayments(userId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
     const [payments, total] = await Promise.all([

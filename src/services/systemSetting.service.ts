@@ -1,7 +1,6 @@
 import { Types } from 'mongoose';
 import { SystemSetting, ISystemSetting } from '../models/systemSetting.model';
 import { AuditLog } from '../models/auditLog.model';
-import { AppError } from '../utils/appError';
 
 interface PublicConfigResponse {
   isFreeModeEnabled: boolean;
