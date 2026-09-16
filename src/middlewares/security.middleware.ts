@@ -64,7 +64,24 @@ export const authRateLimiter = rateLimit({
   },
 });
 
-// 5. Nettoyage anti-injection NoSQL ($ et .)
+// 5. Limiteur de requetes strict pour la reinitialisation de mot de passe (Anti Brute-Force OTP)
+export const passwordResetRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 3, // 3 requetes max par minute par IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req: Request, _res: Response, next: NextFunction) => {
+    next(
+      new AppError(
+        'Trop de demandes de reinitialisation. Veuillez patienter une minute avant de reessayer.',
+        429,
+        'RATE_LIMIT_EXCEEDED'
+      )
+    );
+  },
+});
+
+// 6. Nettoyage anti-injection NoSQL ($ et .)
 const sanitizeValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(sanitizeValue);

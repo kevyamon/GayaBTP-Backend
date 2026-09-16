@@ -15,6 +15,8 @@ export interface IUser extends Document {
   status: UserStatus;
   googleId?: string;
   tokenVersion: number;
+  resetPasswordOtp?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -76,12 +78,26 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 0,
     },
+    resetPasswordOtp: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (_doc, ret: Record<string, unknown>) => {
-        const { password, __v, ...cleanObj } = ret;
+        const {
+          password,
+          resetPasswordOtp,
+          resetPasswordExpires,
+          __v,
+          ...cleanObj
+        } = ret;
         return cleanObj;
       },
     },

@@ -7,6 +7,8 @@ import { User } from '../models/user.model';
 import { AuditLog } from '../models/auditLog.model';
 import { geniusPayService, GeniusPayWebhookPayload } from './geniusPay.service';
 import { notificationService } from './notification.service';
+import { socketService } from './socket.service';
+import { emailService } from './email.service';
 import { AppError } from '../utils/appError';
 import { logger } from '../utils/logger';
 
@@ -123,12 +125,13 @@ class PaymentService {
         data: { paymentId: payment._id.toString(), planSlug: plan.slug },
       });
 
-      await AuditLog.create({
-        actor: { userId: payment.userId, role: 'professionnel' },
-        action: 'WEBHOOK_PAYMENT_SUCCESS',
-        resource: 'payment',
-        resourceId: payment._id.toString(),
-        metadata: { reference: payment.reference, amount: payment.amountFCFA, plan: plan.name },
+      this.sendSubscriptionReceipt(payment.userId, plan.name, payment.amountFCFA, payment.reference, endDate);
+
+      // Alerte temps réel aux administrateurs
+      socketService.sendToAdmins('admin:new_payment', {
+        reference: payment.reference,
+        amount: payment.amountFCFA,
+        planName: plan.name,
       });
 
       logger.info('PAYMENT', `Paiement ${payment.reference} validé avec succès par webhook Genius Pay.`);
@@ -189,6 +192,8 @@ class PaymentService {
         message: `Votre reglement de ${payment.amountFCFA.toLocaleString('fr-FR')} FCFA pour la formule ${plan.name} a ete valide avec succes. Vos avantages sont desormais actifs jusqu au ${endDate.toLocaleDateString('fr-FR')}.`,
         data: { paymentId: payment._id.toString(), planSlug: plan.slug },
       });
+
+      this.sendSubscriptionReceipt(payment.userId, plan.name, payment.amountFCFA, payment.reference, endDate);
 
       await AuditLog.create({
         actor: { userId: new Types.ObjectId(adminUserId), email: adminEmail, role: 'admin' },
@@ -256,6 +261,33 @@ class PaymentService {
       proofUrl: input.proofUrl,
       status: 'pending',
     });
+  }
+
+  private async sendSubscriptionReceipt(
+    userId: Types.ObjectId,
+    planName: string,
+    amountFCFA: number,
+    reference: string,
+    endDate: Date
+  ): Promise<void> {
+    try {
+      const user = await User.findById(userId).lean();
+      if (!user) return;
+      const endDateStr = endDate.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+      await emailService.sendSubscriptionConfirmationEmail(user.email, {
+        userName: user.name,
+        planName,
+        amountFCFA,
+        reference,
+        endDateStr,
+      });
+    } catch (err) {
+      logger.error('NOTIFICATION', `Échec d envoi du reçu d abonnement pour ${reference}`, err);
+    }
   }
 }
 

@@ -5,9 +5,12 @@ import {
   IDocumentRecord,
 } from '../models/verificationRequest.model';
 import { ProProfile } from '../models/proProfile.model';
+import { User } from '../models/user.model';
 import { AuditLog } from '../models/auditLog.model';
 import { notificationService } from './notification.service';
+import { emailService } from './email.service';
 import { AppError } from '../utils/appError';
+import { logger } from '../utils/logger';
 
 export interface SubmitVerificationInput {
   idCardUrl: string;
@@ -48,6 +51,26 @@ class VerificationService {
     // Mise a jour du statut dans le profil
     proProfile.verificationStatus = 'pending';
     await proProfile.save();
+
+    // Envoi de l accuse de reception du dossier par e-mail
+    User.findById(userId)
+      .lean()
+      .then((user) => {
+        if (user) {
+          emailService.sendVerificationSubmittedEmail(
+            user.email,
+            user.name,
+            proProfile.companyName
+          );
+        }
+      })
+      .catch((err) =>
+        logger.error(
+          'NOTIFICATION',
+          `Échec d envoi de l accusé de dépôt de certification pour l utilisateur ${userId}`,
+          err
+        )
+      );
 
     return request;
   }
@@ -95,6 +118,26 @@ class VerificationService {
         message: 'Felicitations ! Vos pieces justificatives ont ete validees par l administration. Votre badge "Verifie" est desormais affiche sur votre fiche et vos prestations.',
       });
 
+      // Notification par courriel de validation de certification
+      User.findById(request.userId)
+        .lean()
+        .then((user) => {
+          if (user) {
+            emailService.sendVerificationApprovedEmail(
+              user.email,
+              user.name,
+              proProfile.companyName
+            );
+          }
+        })
+        .catch((err) =>
+          logger.error(
+            'NOTIFICATION',
+            `Échec d envoi de l e-mail de certification validée pour ${request.userId}`,
+            err
+          )
+        );
+
       await AuditLog.create({
         actor: { userId: new Types.ObjectId(adminUserId), email: adminEmail, role: 'admin' },
         action: 'admin_approved_verification',
@@ -119,6 +162,27 @@ class VerificationService {
         title: 'Demande de certification non validee',
         message: `Votre demande de certification n a pas pu aboutir. Motif : ${notes || 'Justificatifs illisibles ou non conformes'}. Vous pouvez soumettre de nouvelles pieces.`,
       });
+
+      // Notification par courriel de rejet motivé
+      User.findById(request.userId)
+        .lean()
+        .then((user) => {
+          if (user) {
+            emailService.sendVerificationRejectedEmail(
+              user.email,
+              user.name,
+              proProfile.companyName,
+              notes
+            );
+          }
+        })
+        .catch((err) =>
+          logger.error(
+            'NOTIFICATION',
+            `Échec d envoi de l e-mail de certification rejetée pour ${request.userId}`,
+            err
+          )
+        );
 
       await AuditLog.create({
         actor: { userId: new Types.ObjectId(adminUserId), email: adminEmail, role: 'admin' },

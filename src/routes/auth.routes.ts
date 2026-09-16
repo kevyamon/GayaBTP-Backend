@@ -2,11 +2,16 @@ import { Router } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { authenticate } from '../middlewares/auth.middleware';
-import { authRateLimiter } from '../middlewares/security.middleware';
+import {
+  authRateLimiter,
+  passwordResetRateLimiter,
+} from '../middlewares/security.middleware';
 import {
   registerParticulierSchema,
   registerProSchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../schemas/auth.schema';
 
 const router = Router();
@@ -43,5 +48,21 @@ router.post('/logout', authController.logout);
 
 // Profil de l'utilisateur connecte
 router.get('/me', authenticate, authController.getMe);
+
+// Demande de code OTP pour mot de passe oublie
+router.post(
+  '/forgot-password',
+  passwordResetRateLimiter,
+  validate({ body: forgotPasswordSchema }),
+  authController.forgotPassword
+);
+
+// Reinitialisation du mot de passe avec code OTP
+router.post(
+  '/reset-password',
+  passwordResetRateLimiter,
+  validate({ body: resetPasswordSchema }),
+  authController.resetPassword
+);
 
 export default router;

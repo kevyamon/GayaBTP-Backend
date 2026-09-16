@@ -79,7 +79,36 @@ export const googleAuthSchema = z.object({
     .min(1, 'Le jeton ne peut pas etre vide'),
 });
 
+// Schema de demande de reinitialisation de mot de passe (Forgot Password)
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ message: 'L adresse email est obligatoire' })
+    .email('Format d adresse email invalide')
+    .toLowerCase()
+    .trim(),
+});
+
+// Schema de validation OTP et definition du nouveau mot de passe (Reset Password)
+export const resetPasswordSchema = z.object({
+  email: z
+    .string({ message: 'L adresse email est obligatoire' })
+    .email('Format d adresse email invalide')
+    .toLowerCase()
+    .trim(),
+  otp: z
+    .string({ message: 'Le code de securite OTP est obligatoire' })
+    .length(6, 'Le code de securite doit comporter exactement 6 chiffres')
+    .regex(/^\d{6}$/, 'Le code de securite doit contenir uniquement des chiffres')
+    .trim(),
+  newPassword: z
+    .string({ message: 'Le nouveau mot de passe est obligatoire' })
+    .min(8, 'Le mot de passe doit comporter au moins 8 caracteres')
+    .max(100, 'Le mot de passe ne peut pas depasser 100 caracteres'),
+});
+
 export type RegisterParticulierInput = z.infer<typeof registerParticulierSchema>;
 export type RegisterProInput = z.infer<typeof registerProSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

@@ -1,7 +1,9 @@
 import { Alert, IAlert } from '../models/alert.model';
 import { IListing } from '../models/listing.model';
 import { Notification } from '../models/notification.model';
+import { User } from '../models/user.model';
 import { notificationService } from './notification.service';
+import { emailService } from './email.service';
 import { logger } from '../utils/logger';
 
 class AlertMatchingService {
@@ -84,6 +86,32 @@ class AlertMatchingService {
                 priceFCFA: listing.priceFCFA,
               },
             });
+
+            // Envoi de l alerte immobiliere par courriel
+            User.findById(alert.userId)
+              .lean()
+              .then((user) => {
+                if (user) {
+                  emailService.sendListingAlertMatchEmail(user.email, {
+                    userName: user.name,
+                    alertName: alert.name,
+                    listingTitle: listing.title,
+                    city: listing.city,
+                    district: listing.district,
+                    propertyType: listing.propertyType,
+                    priceFCFA: listing.priceFCFA,
+                    surfaceM2: listing.surfaceM2,
+                    listingId: listing._id.toString(),
+                  });
+                }
+              })
+              .catch((err) =>
+                logger.error(
+                  'NOTIFICATION',
+                  `Échec d envoi de l e-mail d alerte foncière à ${alert.userId}`,
+                  err
+                )
+              );
 
             await Alert.findByIdAndUpdate(alert._id, {
               $set: { lastTriggeredAt: new Date() },

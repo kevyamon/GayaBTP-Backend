@@ -2,24 +2,28 @@ import http from 'http';
 import app from './app';
 import { env } from './config/env.config';
 import { connectDB, closeDB } from './config/db.config';
+import { socketService } from './services/socket.service';
 import { logger } from './utils/logger';
 
 const server = http.createServer(app);
 
+// 1. Initialisation du cerveau temps réel Socket.io
+socketService.init(server);
+
 const startServer = async (): Promise<void> => {
   try {
-    // 1. Connexion prealable a MongoDB
+    // 2. Connexion préalable à MongoDB
     await connectDB();
 
-    // 2. Ecoute du serveur HTTP
+    // 3. Écoute du serveur HTTP et WebSocket
     server.listen(env.PORT, () => {
       logger.info(
         'SYSTEM',
-        `Serveur GayaBTP demarre avec succes sur le port ${env.PORT} en mode [${env.NODE_ENV}]`
+        `Serveur GayaBTP (HTTP & WebSocket) démarré avec succès sur le port ${env.PORT} en mode [${env.NODE_ENV}]`
       );
     });
   } catch (error) {
-    logger.error('SYSTEM', 'Erreur fatale lors du demarrage du serveur', error);
+    logger.error('SYSTEM', 'Erreur fatale lors du démarrage du serveur', error);
     process.exit(1);
   }
 };

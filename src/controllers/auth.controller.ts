@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
+import { passwordResetService } from '../services/passwordReset.service';
 import {
   REFRESH_COOKIE_NAME,
   getRefreshCookieOptions,
@@ -141,6 +142,48 @@ class AuthController {
       res.status(200).json({
         success: true,
         data: me,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email } = req.body;
+      await passwordResetService.requestResetOtp(email);
+
+      res.status(200).json({
+        success: true,
+        message:
+          'Si cette adresse est enregistree, un e-mail contenant le code de securite vient d etre envoye.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email, otp, newPassword } = req.body;
+      await passwordResetService.resetPasswordWithOtp({
+        email,
+        otp,
+        newPassword,
+      });
+
+      res.status(200).json({
+        success: true,
+        message:
+          'Votre mot de passe a ete reinitialise avec succes. Vous pouvez vous connecter avec vos nouveaux identifiants.',
       });
     } catch (error) {
       next(error);

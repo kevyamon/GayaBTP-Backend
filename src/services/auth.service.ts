@@ -13,6 +13,7 @@ import {
   RegisterProInput,
   LoginInput,
 } from '../schemas/auth.schema';
+import { emailService } from './email.service';
 import { logger } from '../utils/logger';
 
 export interface SafeUser {
@@ -91,6 +92,16 @@ class AuthService {
 
     logger.info('AUTH', `Inscription d un nouveau particulier : ${user.email}`);
 
+    emailService
+      .sendWelcomeEmail(user.email, user.name, 'particulier')
+      .catch((err) =>
+        logger.error(
+          'NOTIFICATION',
+          `Échec d envoi de l e-mail de bienvenue à ${user.email}`,
+          err
+        )
+      );
+
     return {
       user: user.toJSON() as unknown as SafeUser,
       tokens,
@@ -147,6 +158,16 @@ class AuthService {
     };
 
     logger.info('AUTH', `Inscription d un nouveau professionnel : ${user.email} (${input.companyName})`);
+
+    emailService
+      .sendWelcomeEmail(user.email, user.name, 'professionnel')
+      .catch((err) =>
+        logger.error(
+          'NOTIFICATION',
+          `Échec d envoi de l e-mail de bienvenue à ${user.email}`,
+          err
+        )
+      );
 
     return {
       user: user.toJSON() as unknown as SafeUser,

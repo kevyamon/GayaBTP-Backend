@@ -4,6 +4,7 @@ import {
   INotification,
   NotificationType,
 } from '../models/notification.model';
+import { socketService } from './socket.service';
 import { AppError } from '../utils/appError';
 import { logger } from '../utils/logger';
 
@@ -25,6 +26,9 @@ class NotificationService {
       data: params.data || {},
       isRead: false,
     });
+
+    // Émission temps réel instantanée sur la room privée de l'utilisateur
+    socketService.sendToUser(params.userId.toString(), 'notification:new', notification);
 
     logger.info('NOTIFICATION', `Notification creee pour l utilisateur ${params.userId} [${params.type}]`);
 

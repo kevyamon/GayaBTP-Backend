@@ -48,6 +48,10 @@ const envSchema = z.object({
   GENIUS_PAY_WEBHOOK_SECRET: z.string().default(''),
   GENIUS_PAY_BASE_URL: z.string().default('https://api.geniuspay.ci'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
+  BREVO_API_KEY: z.string().default(''),
+  EMAIL_FROM: z.string().default('contactgayabtp@gmail.com'),
+  EMAIL_FROM_NAME: z.string().default('GayaBTP'),
+  ADMIN_EMAIL: z.string().default('admin@gayabtp.com'),
 });
 
 // Analyse et validation
