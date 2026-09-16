@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Types } from 'mongoose';
-import { User, IUser } from '../models/user.model';
+import { User } from '../models/user.model';
 import { AdminInvitation, IAdminInvitation } from '../models/adminInvitation.model';
 import { AuditLog } from '../models/auditLog.model';
 import { AppError } from '../utils/appError';

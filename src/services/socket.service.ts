@@ -9,7 +9,7 @@ interface SocketData {
 }
 
 class SocketService {
-  private io: Server<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, SocketData> | null = null;
+  private io: Server | null = null;
   private readonly connectedUsers = new Map<string, Set<string>>(); // userId -> Set<socketId>
 
   init(httpServer: HttpServer): void {

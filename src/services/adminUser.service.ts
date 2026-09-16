@@ -93,7 +93,7 @@ class AdminUserService {
     ]);
 
     return {
-      user: user as IUser,
+      user: user as unknown as IUser,
       proProfile,
       listings,
       payments,
