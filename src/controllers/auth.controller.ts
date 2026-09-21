@@ -84,6 +84,30 @@ class AuthController {
     }
   }
 
+  async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { idToken } = req.body;
+      const result = await authService.loginWithGoogle(idToken);
+
+      res.cookie(
+        REFRESH_COOKIE_NAME,
+        result.tokens.refreshToken,
+        getRefreshCookieOptions()
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          user: result.user,
+          proProfile: result.proProfile,
+          accessToken: result.tokens.accessToken,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const token =
@@ -91,7 +115,7 @@ class AuthController {
 
       if (!token) {
         throw AppError.unauthorized(
-          'Jeton de rafraichissement absent. Veuillez vous reconnecter.'
+          'Jeton de rafraîchissement absent. Veuillez vous reconnecter.'
         );
       }
 
@@ -123,7 +147,7 @@ class AuthController {
       res.status(200).json({
         success: true,
         data: {
-          message: 'Deconnexion effectuee avec succes.',
+          message: 'Déconnexion effectuée avec succès.',
         },
       });
     } catch (error) {
@@ -134,7 +158,7 @@ class AuthController {
   async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw AppError.unauthorized('Utilisateur non authentifie.');
+        throw AppError.unauthorized('Utilisateur non authentifié.');
       }
 
       const me = await authService.getMe(req.user.userId);
@@ -160,7 +184,7 @@ class AuthController {
       res.status(200).json({
         success: true,
         message:
-          'Si cette adresse est enregistree, un e-mail contenant le code de securite vient d etre envoye.',
+          'Si cette adresse est enregistrée, un e-mail avec le code de sécurité vient d’être envoyé.',
       });
     } catch (error) {
       next(error);
@@ -183,7 +207,7 @@ class AuthController {
       res.status(200).json({
         success: true,
         message:
-          'Votre mot de passe a ete reinitialise avec succes. Vous pouvez vous connecter avec vos nouveaux identifiants.',
+          'Votre mot de passe a été réinitialisé avec succès.',
       });
     } catch (error) {
       next(error);

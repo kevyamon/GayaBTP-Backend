@@ -10,6 +10,7 @@ import {
   registerParticulierSchema,
   registerProSchema,
   loginSchema,
+  googleAuthSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../schemas/auth.schema';
@@ -40,16 +41,24 @@ router.post(
   authController.login
 );
 
+// Connexion Google OAuth 2.0 (Google Identity Services)
+router.post(
+  '/google',
+  authRateLimiter,
+  validate({ body: googleAuthSchema }),
+  authController.googleAuth
+);
+
 // Renouvellement de session via Refresh Token
 router.post('/refresh', authController.refresh);
 
-// Deconnexion (nettoyage du cookie HttpOnly)
+// Déconnexion (nettoyage du cookie HttpOnly)
 router.post('/logout', authController.logout);
 
-// Profil de l'utilisateur connecte
+// Profil de l'utilisateur connecté
 router.get('/me', authenticate, authController.getMe);
 
-// Demande de code OTP pour mot de passe oublie
+// Demande de code OTP pour mot de passe oublié
 router.post(
   '/forgot-password',
   passwordResetRateLimiter,
@@ -57,7 +66,7 @@ router.post(
   authController.forgotPassword
 );
 
-// Reinitialisation du mot de passe avec code OTP
+// Réinitialisation du mot de passe avec code OTP
 router.post(
   '/reset-password',
   passwordResetRateLimiter,
