@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Types } from 'mongoose';
 import { User } from '../models/user.model';
 import { ProProfile } from '../models/proProfile.model';
 import { AppError } from '../utils/appError';
@@ -14,52 +13,11 @@ import {
   RegisterProInput,
   LoginInput,
 } from '../schemas/auth.schema';
+import { SafeUser, SafeProProfile, AuthTokens, AuthResult } from '../types/auth.types';
 import { emailService } from './email.service';
 import { logger } from '../utils/logger';
 
-export interface SafeUser {
-  _id: string | Types.ObjectId;
-  name: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-  role: string;
-  status: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface SafeProProfile {
-  _id: string | Types.ObjectId;
-  userId: string | Types.ObjectId;
-  accountType: string;
-  companyName: string;
-  specialties: string[];
-  bio?: string;
-  yearsOfExperience?: number;
-  city: string;
-  district?: string;
-  phoneWhatsApp: string;
-  email: string;
-  verificationStatus: string;
-  isVerified: boolean;
-  isActive: boolean;
-  services?: unknown[];
-  projects?: unknown[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface AuthResult {
-  user: SafeUser;
-  proProfile?: SafeProProfile | null;
-  tokens: AuthTokens;
-}
+export type { SafeUser, SafeProProfile, AuthTokens, AuthResult };
 
 class AuthService {
   async registerParticulier(input: RegisterParticulierInput): Promise<AuthResult> {
@@ -91,18 +49,12 @@ class AuthService {
       }),
     };
 
-    logger.info('AUTH', `Inscription nouveau particulier : ${user.email}`);
+    logger.info('AUTH', `Inscription particulier : ${user.email}`);
+    emailService.sendWelcomeEmail(user.email, user.name, 'particulier').catch((err) =>
+      logger.error('NOTIFICATION', `Échec e-mail bienvenue ${user.email}`, err)
+    );
 
-    emailService
-      .sendWelcomeEmail(user.email, user.name, 'particulier')
-      .catch((err) =>
-        logger.error('NOTIFICATION', `Échec e-mail bienvenue ${user.email}`, err)
-      );
-
-    return {
-      user: user.toJSON() as unknown as SafeUser,
-      tokens,
-    };
+    return { user: user.toJSON() as unknown as SafeUser, tokens };
   }
 
   async registerProfessionnel(input: RegisterProInput): Promise<AuthResult> {
@@ -122,7 +74,8 @@ class AuthService {
 
     const proProfile = await ProProfile.create({
       userId: user._id,
-      accountType: input.accountType,
+      category: input.category,
+      accountType: input.accountType || 'entreprise',
       companyName: input.companyName,
       specialties: input.specialties,
       bio: input.bio || '',
@@ -152,13 +105,10 @@ class AuthService {
       }),
     };
 
-    logger.info('AUTH', `Inscription pro : ${user.email} (${input.companyName})`);
-
-    emailService
-      .sendWelcomeEmail(user.email, user.name, 'professionnel')
-      .catch((err) =>
-        logger.error('NOTIFICATION', `Échec e-mail bienvenue pro ${user.email}`, err)
-      );
+    logger.info('AUTH', `Inscription pro (${input.category}) : ${user.email}`);
+    emailService.sendWelcomeEmail(user.email, user.name, 'professionnel').catch((err) =>
+      logger.error('NOTIFICATION', `Échec e-mail bienvenue pro ${user.email}`, err)
+    );
 
     return {
       user: user.toJSON() as unknown as SafeUser,
@@ -174,7 +124,7 @@ class AuthService {
     }
 
     if (user.status === 'suspended') {
-      throw AppError.forbidden('Ce compte est temporairement suspendu. Contactez le support.');
+      throw AppError.forbidden('Ce compte est suspendu. Veuillez contacter le support.');
     }
 
     let proProfile = null;

@@ -5,7 +5,8 @@ export type ProAccountType =
   | 'cabinet'
   | 'artisan'
   | 'independant'
-  | 'bureau_etude';
+  | 'bureau_etude'
+  | string;
 
 export type VerificationStatus =
   | 'not_requested'
@@ -36,6 +37,7 @@ export interface IProProject {
 export interface IProProfile extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
+  category: string;
   accountType: ProAccountType;
   companyName: string;
   specialties: string[];
@@ -80,10 +82,17 @@ const proProfileSchema = new Schema<IProProfile>(
       unique: true,
       index: true,
     },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
     accountType: {
       type: String,
-      enum: ['entreprise', 'cabinet', 'artisan', 'independant', 'bureau_etude'],
       required: true,
+      trim: true,
+      default: 'entreprise',
     },
     companyName: {
       type: String,
@@ -161,8 +170,7 @@ const proProfileSchema = new Schema<IProProfile>(
   }
 );
 
-// Indexation composee pour la recherche rapide dans l'annuaire
-proProfileSchema.index({ city: 1, isVerified: -1, isActive: 1 });
+proProfileSchema.index({ category: 1, city: 1, isVerified: -1 });
 proProfileSchema.index({ specialties: 1, city: 1 });
 
 export const ProProfile: Model<IProProfile> = model<IProProfile>(
