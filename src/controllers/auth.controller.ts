@@ -27,6 +27,9 @@ class AuthController {
         data: {
           user: result.user,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -54,6 +57,9 @@ class AuthController {
           user: result.user,
           proProfile: result.proProfile,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -77,6 +83,9 @@ class AuthController {
           user: result.user,
           proProfile: result.proProfile,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -101,6 +110,9 @@ class AuthController {
           user: result.user,
           proProfile: result.proProfile,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -131,6 +143,9 @@ class AuthController {
         success: true,
         data: {
           accessToken: newTokens.accessToken,
+          tokens: {
+            accessToken: newTokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -141,7 +156,7 @@ class AuthController {
   async logout(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       res.clearCookie(REFRESH_COOKIE_NAME, {
-        path: '/api/v1/auth',
+        path: '/',
       });
 
       res.status(200).json({
@@ -166,6 +181,23 @@ class AuthController {
       res.status(200).json({
         success: true,
         data: me,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw AppError.unauthorized('Utilisateur non authentifié.');
+      }
+
+      const result = await authService.updateMe(req.user.userId, req.body);
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

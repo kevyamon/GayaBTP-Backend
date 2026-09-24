@@ -25,7 +25,7 @@ export const getRefreshCookieOptions = (): CookieOptions => {
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 jours
-    path: '/api/v1/auth', // Limite le cookie uniquement aux routes d'authentification
+    path: '/', // Accessible a l'ensemble du domaine pour le rafraichissement transparent
   };
 };
 

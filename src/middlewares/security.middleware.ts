@@ -12,12 +12,20 @@ export const helmetMiddleware = helmet({
 });
 
 // 2. Configuration CORS stricte
+const isDevelopment = env.NODE_ENV !== 'production';
+const localhostRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    // Autoriser les outils sans origine (ex: curl/postman/mobile) en developpement
-    if (!origin && env.NODE_ENV !== 'production') {
+    // Autoriser les requetes sans en-tete origin (outils CLI, curl, apps mobiles) en developpement
+    if (!origin && isDevelopment) {
       return callback(null, true);
     }
+    // Autoriser tout port localhost en environnement de developpement
+    if (origin && isDevelopment && localhostRegex.test(origin)) {
+      return callback(null, true);
+    }
+    // Verifier la liste blanche en production ou developpement
     if (origin && env.ALLOWED_ORIGINS.includes(origin)) {
       return callback(null, true);
     }

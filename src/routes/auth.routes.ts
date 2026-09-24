@@ -57,6 +57,7 @@ router.post('/logout', authController.logout);
 
 // Profil de l'utilisateur connecté
 router.get('/me', authenticate, authController.getMe);
+router.patch('/me', authenticate, authController.updateMe);
 
 // Demande de code OTP pour mot de passe oublié
 router.post(

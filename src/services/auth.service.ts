@@ -255,6 +255,36 @@ class AuthService {
     return { user: user as unknown as SafeUser, proProfile };
   }
 
+  async updateMe(
+    userId: string,
+    input: Record<string, unknown>
+  ): Promise<{ user: SafeUser; proProfile?: SafeProProfile | null }> {
+    const userUpdates: Record<string, unknown> = {};
+    const proUpdates: Record<string, unknown> = {};
+
+    ['name', 'phone', 'avatar', 'coverImage', 'city', 'bio'].forEach((k) => {
+      if (input[k] !== undefined) userUpdates[k] = input[k];
+    });
+
+    ['companyName', 'specialties', 'phoneWhatsApp', 'bio', 'city', 'district', 'yearsOfExperience'].forEach((k) => {
+      if (input[k] !== undefined) proUpdates[k] = input[k];
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(userId, userUpdates, { new: true }).lean();
+    if (!updatedUser) throw AppError.notFound('Utilisateur introuvable.');
+
+    let updatedPro: SafeProProfile | null = null;
+    if (updatedUser.role === 'professionnel') {
+      updatedPro = (await ProProfile.findOneAndUpdate(
+        { userId: updatedUser._id },
+        proUpdates,
+        { new: true }
+      ).lean()) as unknown as SafeProProfile;
+    }
+
+    return { user: updatedUser as unknown as SafeUser, proProfile: updatedPro };
+  }
+
   async revokeAllSessions(userId: string): Promise<void> {
     await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
     logger.info('AUTH', `Sessions révoquées pour ${userId}`);

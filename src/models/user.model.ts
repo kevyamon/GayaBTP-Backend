@@ -10,7 +10,10 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   avatar?: string;
+  coverImage?: string;
   phone?: string;
+  city?: string;
+  bio?: string;
   role: UserRole;
   status: UserStatus;
   googleId?: string;
@@ -52,10 +55,25 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: '',
     },
+    coverImage: {
+      type: String,
+      default: '',
+    },
     phone: {
       type: String,
       trim: true,
       default: '',
+    },
+    city: {
+      type: String,
+      trim: true,
+      default: 'Abidjan',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [500, 'La bio ne peut pas depasser 500 caracteres'],
     },
     role: {
       type: String,

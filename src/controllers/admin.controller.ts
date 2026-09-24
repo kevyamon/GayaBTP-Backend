@@ -40,6 +40,9 @@ class AdminController {
         data: {
           user: result.user,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {
@@ -62,6 +65,9 @@ class AdminController {
         data: {
           user: result.user,
           accessToken: result.tokens.accessToken,
+          tokens: {
+            accessToken: result.tokens.accessToken,
+          },
         },
       });
     } catch (error) {

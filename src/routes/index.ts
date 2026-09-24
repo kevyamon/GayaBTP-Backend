@@ -13,6 +13,7 @@ import calculatorRoutes from './calculator.routes';
 import paymentRoutes from './payment.routes';
 import adminRoutes from './admin.routes';
 import configRoutes from './config.routes';
+import uploadRoutes from './upload.routes';
 
 const apiRouter = Router();
 
@@ -57,6 +58,9 @@ apiRouter.use('/admin', adminRoutes);
 
 // 14. Module Configuration Globale & Mode Gratuit
 apiRouter.use('/config', configRoutes);
+
+// 15. Module Téléversement de Médias (Cloudinary)
+apiRouter.use('/upload', uploadRoutes);
 
 // Informations de statut de l'API v1
 apiRouter.get('/', (_req: Request, res: Response) => {
