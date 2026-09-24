@@ -92,11 +92,11 @@ class ListingService {
     }
 
     const listing = await Listing.findById(id)
-      .populate('ownerId', 'name phone avatar email')
+      .populate('ownerId', 'name phone avatar email role city bio coverImage createdAt')
       .lean();
 
     if (!listing || listing.status === 'archived') {
-      throw AppError.notFound('Annonce introuvable ou archivee.');
+      throw AppError.notFound('Annonce introuvable ou archivée.');
     }
 
     return listing as unknown as IListing;
@@ -125,7 +125,7 @@ class ListingService {
     input: UpdateListingInput
   ): Promise<IListing> {
     if (!Types.ObjectId.isValid(listingId)) {
-      throw AppError.badRequest('Identifiant d annonce invalide.');
+      throw AppError.badRequest("Identifiant d'annonce invalide.");
     }
 
     const listing = await Listing.findById(listingId);
@@ -133,9 +133,9 @@ class ListingService {
       throw AppError.notFound('Annonce introuvable.');
     }
 
-    // Seul le proprietaire ou un administrateur peut modifier
+    // Seul le propriétaire ou un administrateur peut modifier
     if (listing.ownerId.toString() !== userId && userRole !== 'admin') {
-      throw AppError.forbidden('Vous n etes pas autorise a modifier cette annonce.');
+      throw AppError.forbidden("Vous n'êtes pas autorisé à modifier cette annonce.");
     }
 
     Object.assign(listing, input);
@@ -146,7 +146,7 @@ class ListingService {
 
   async deleteListing(userId: string, userRole: string, listingId: string): Promise<void> {
     if (!Types.ObjectId.isValid(listingId)) {
-      throw AppError.badRequest('Identifiant d annonce invalide.');
+      throw AppError.badRequest("Identifiant d'annonce invalide.");
     }
 
     const listing = await Listing.findById(listingId);
@@ -155,10 +155,10 @@ class ListingService {
     }
 
     if (listing.ownerId.toString() !== userId && userRole !== 'admin') {
-      throw AppError.forbidden('Vous n etes pas autorise a supprimer cette annonce.');
+      throw AppError.forbidden("Vous n'êtes pas autorisé à supprimer cette annonce.");
     }
 
-    // Archivage logique plutot que suppression brute
+    // Archivage logique plutôt que suppression brute
     listing.status = 'archived';
     await listing.save();
   }

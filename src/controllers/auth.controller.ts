@@ -204,6 +204,24 @@ class AuthController {
     }
   }
 
+  async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw AppError.unauthorized('Utilisateur non authentifié.');
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      await authService.changePassword(req.user.userId, currentPassword, newPassword);
+
+      res.status(200).json({
+        success: true,
+        data: { message: 'Votre mot de passe a été modifié avec succès.' },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async forgotPassword(
     req: Request,
     res: Response,

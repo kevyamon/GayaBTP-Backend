@@ -110,9 +110,21 @@ export const resetPasswordSchema = z.object({
     .max(100, 'Le mot de passe ne peut pas dépasser 100 caractères'),
 });
 
+// Schéma de modification du mot de passe (Utilisateur connecté)
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string({ message: 'Le mot de passe actuel est obligatoire' })
+    .min(1, 'Le mot de passe actuel ne peut pas être vide'),
+  newPassword: z
+    .string({ message: 'Le nouveau mot de passe est obligatoire' })
+    .min(8, 'Le mot de passe doit comporter au moins 8 caractères')
+    .max(100, 'Le mot de passe ne peut pas dépasser 100 caractères'),
+});
+
 export type RegisterParticulierInput = z.infer<typeof registerParticulierSchema>;
 export type RegisterProInput = z.infer<typeof registerProSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

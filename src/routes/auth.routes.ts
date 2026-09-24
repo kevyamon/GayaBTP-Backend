@@ -13,6 +13,7 @@ import {
   googleAuthSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 } from '../schemas/auth.schema';
 
 const router = Router();
@@ -58,6 +59,14 @@ router.post('/logout', authController.logout);
 // Profil de l'utilisateur connecté
 router.get('/me', authenticate, authController.getMe);
 router.patch('/me', authenticate, authController.updateMe);
+
+// Modification du mot de passe (Utilisateur connecté)
+router.post(
+  '/change-password',
+  authenticate,
+  validate({ body: changePasswordSchema }),
+  authController.changePassword
+);
 
 // Demande de code OTP pour mot de passe oublié
 router.post(

@@ -14,11 +14,13 @@ import paymentRoutes from './payment.routes';
 import adminRoutes from './admin.routes';
 import configRoutes from './config.routes';
 import uploadRoutes from './upload.routes';
+import userRoutes from './user.routes';
 
 const apiRouter = Router();
 
-// 1. Module Authentification
+// 1. Module Authentification & Utilisateurs
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/users', userRoutes);
 
 // 2. Module Professionnels & Annuaire BTP
 apiRouter.use('/pros', proRoutes);

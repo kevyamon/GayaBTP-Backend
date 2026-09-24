@@ -285,6 +285,20 @@ class AuthService {
     return { user: updatedUser as unknown as SafeUser, proProfile: updatedPro };
   }
 
+  async changePassword(userId: string, currentPass: string, newPass: string): Promise<void> {
+    const user = await User.findById(userId).select('+password');
+    if (!user) throw AppError.notFound('Utilisateur introuvable.');
+
+    if (!user.password || !(await user.comparePassword(currentPass))) {
+      throw AppError.unauthorized('Le mot de passe actuel est incorrect.');
+    }
+
+    user.password = newPass;
+    user.tokenVersion += 1;
+    await user.save();
+    logger.info('AUTH', `Mot de passe modifié pour ${userId}`);
+  }
+
   async revokeAllSessions(userId: string): Promise<void> {
     await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
     logger.info('AUTH', `Sessions révoquées pour ${userId}`);
